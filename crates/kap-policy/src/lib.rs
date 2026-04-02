@@ -156,4 +156,61 @@ mod tests {
         intent.access_key_id = "aak_wrong".into();
         assert!(validate_policy_against_intent(&record, &intent).is_err());
     }
+
+    fn sample_permit() -> PolicyPermit {
+        let now = Utc::now();
+        PolicyPermit {
+            record_type: "policy_permit".into(),
+            record_version: 1,
+            permit_id: "permit_1".into(),
+            request_id: "req_1".into(),
+            wallet_id: "wal_1".into(),
+            access_key_id: "aak_1".into(),
+            chain_id: "eip155:84532".into(),
+            signing_type: "eth_signTransaction".into(),
+            payload_hash: "0xdeadbeef".into(),
+            destination: "0x1234".into(),
+            value: "1000".into(),
+            reservation_id: "res_1".into(),
+            policy_id: "pol_1".into(),
+            policy_version: 1,
+            issued_at: now,
+            expires_at: now + Duration::hours(1),
+            signature: "sig_permit".into(),
+        }
+    }
+
+    #[test]
+    fn valid_permit_passes() {
+        let permit = sample_permit();
+        let intent = sample_intent();
+        assert!(validate_permit_against_intent(&permit, &intent, &Utc::now()).is_ok());
+    }
+
+    #[test]
+    fn expired_permit_rejected() {
+        let mut permit = sample_permit();
+        permit.expires_at = Utc::now() - Duration::hours(1);
+        let intent = sample_intent();
+        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        assert!(matches!(err, PolicyError::PermitExpired));
+    }
+
+    #[test]
+    fn permit_wallet_mismatch_rejected() {
+        let mut permit = sample_permit();
+        permit.wallet_id = "wal_wrong".into();
+        let intent = sample_intent();
+        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        assert!(matches!(err, PolicyError::PermitWalletMismatch));
+    }
+
+    #[test]
+    fn permit_access_key_mismatch_rejected() {
+        let mut permit = sample_permit();
+        permit.access_key_id = "aak_wrong".into();
+        let intent = sample_intent();
+        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        assert!(matches!(err, PolicyError::PermitAccessKeyMismatch));
+    }
 }
