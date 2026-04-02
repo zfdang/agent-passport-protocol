@@ -38,6 +38,30 @@ pub struct OwnerSessionResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasskeySignUpStartRequest {
+    pub owner_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasskeySignInStartRequest {
+    pub owner_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasskeyCeremonyResponse {
+    pub flow_id: String,
+    pub public_key: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasskeyFinishRequest {
+    pub flow_id: String,
+    pub credential: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApproveDeviceCodeRequest {
     pub user_code: String,
 }

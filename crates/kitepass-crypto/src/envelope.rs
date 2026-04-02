@@ -1,7 +1,7 @@
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Nonce as GcmNonce};
-use rand::RngCore;
 use rand::rngs::OsRng;
+use rand::RngCore;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EnvelopeError {

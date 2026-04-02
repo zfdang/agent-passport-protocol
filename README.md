@@ -22,9 +22,9 @@ Public shared contract crates for the Agent Passport ecosystem.
 
 ## Consumers
 
-- [`agent-passport`](https://github.com/nicekite/agent-passport) — main platform services
-- [`agent-passport-vault-signer`](https://github.com/nicekite/agent-passport-vault-signer) — standalone Vault Signer
-- [`agent-passport-cli`](https://github.com/nicekite/agent-passport-cli) — Kitepass CLI
+- [`agent-passport`](https://github.com/zfdang/agent-passport) — main platform services
+- [`agent-passport-vault-signer`](https://github.com/zfdang/agent-passport-vault-signer) — standalone Vault Signer
+- [`agent-passport-cli`](https://github.com/zfdang/agent-passport-cli) — Kitepass CLI
 
 ## License
 

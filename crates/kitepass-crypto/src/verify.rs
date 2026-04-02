@@ -109,8 +109,8 @@ pub fn verify_agent_proof(args: &VerifyAgentProofArgs<'_>) -> Result<(), Verific
 #[cfg(test)]
 mod tests {
     use super::{
-        CanonicalAgentMessageArgs, VerifyAgentProofArgs, canonical_agent_message, payload_hash_hex,
-        verify_agent_proof,
+        canonical_agent_message, payload_hash_hex, verify_agent_proof, CanonicalAgentMessageArgs,
+        VerifyAgentProofArgs,
     };
     use ed25519_dalek::{Signer, SigningKey};
 

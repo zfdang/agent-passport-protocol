@@ -1,4 +1,4 @@
-use tracing_subscriber::{EnvFilter, fmt};
+use tracing_subscriber::{fmt, EnvFilter};
 
 /// Initialize the tracing subscriber with JSON format and env filter.
 pub fn init_tracing(service_name: &str) {

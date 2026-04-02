@@ -11,9 +11,9 @@ members = [
 
 [workspace.package]
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/nicekite/agent-passport-protocol"
+repository = "https://github.com/zfdang/agent-passport-protocol"
 
 [workspace.dependencies]
 # ── workspace crates ─────────────────────────────────────
