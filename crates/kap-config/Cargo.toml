@@ -1,0 +1,11 @@
+[package]
+name = "kap-config"
+description = "Layered configuration loading for Kite Agent Passport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+figment.workspace = true
+serde.workspace = true
+thiserror.workspace = true

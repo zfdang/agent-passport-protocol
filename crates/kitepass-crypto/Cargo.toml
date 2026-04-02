@@ -1,0 +1,20 @@
+[package]
+name = "kitepass-crypto"
+description = "Cryptographic primitives for Kite Agent Passport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ed25519-dalek.workspace = true
+aes-gcm.workspace = true
+hpke.workspace = true
+sha2.workspace = true
+rand.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_json_canonicalizer = "0.3"
+rand09 = { package = "rand", version = "0.9", features = ["os_rng", "std_rng"] }
+zeroize.workspace = true
+thiserror.workspace = true

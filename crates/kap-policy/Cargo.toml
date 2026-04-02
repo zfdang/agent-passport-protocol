@@ -1,0 +1,13 @@
+[package]
+name = "kap-policy"
+description = "Policy model and permit helpers for Kite Agent Passport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+kitepass-api-types.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true

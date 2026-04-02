@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/kitepass-api-types",
+    "crates/kitepass-crypto",
+    "crates/kitepass-attestation",
+    "crates/kap-config",
+    "crates/kap-observability",
+    "crates/kap-policy",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/nicekite/agent-passport-protocol"
+
+[workspace.dependencies]
+# ── workspace crates ─────────────────────────────────────
+kitepass-api-types   = { path = "crates/kitepass-api-types" }
+kitepass-crypto      = { path = "crates/kitepass-crypto" }
+kitepass-attestation = { path = "crates/kitepass-attestation" }
+kap-config           = { path = "crates/kap-config" }
+kap-observability    = { path = "crates/kap-observability" }
+kap-policy           = { path = "crates/kap-policy" }
+
+# ── serialization ────────────────────────────────────────
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# ── crypto ───────────────────────────────────────────────
+ed25519-dalek = "2"
+aes-gcm       = "0.10"
+hpke          = { version = "0.13", features = ["x25519"] }
+sha2          = "0.10"
+rand          = "0.8"
+hex           = "0.4"
+zeroize       = { version = "1", features = ["derive"] }
+
+# ── time / ids ───────────────────────────────────────────
+chrono = { version = "0.4", features = ["serde"] }
+uuid   = { version = "1", features = ["v4", "serde"] }
+
+# ── config ───────────────────────────────────────────────
+figment = { version = "0.10", features = ["toml", "env"] }
+
+# ── observability ────────────────────────────────────────
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# ── error handling ───────────────────────────────────────
+thiserror = "2"
