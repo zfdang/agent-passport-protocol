@@ -7,6 +7,9 @@ pub struct Policy {
     pub policy_id: String,
     pub binding_id: String,
     pub wallet_id: String,
+    /// Access key associated with this policy. Empty string if created without
+    /// an access key binding (the binding is established later during provisioning).
+    #[serde(default)]
     pub access_key_id: String,
     pub allowed_chains: Vec<String>,
     pub allowed_actions: Vec<String>,
@@ -23,7 +26,8 @@ pub struct Policy {
 pub struct CreatePolicyRequest {
     pub binding_id: Option<String>,
     pub wallet_id: String,
-    pub access_key_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access_key_id: Option<String>,
     pub allowed_chains: Vec<String>,
     pub allowed_actions: Vec<String>,
     pub max_single_amount: String,
@@ -37,7 +41,8 @@ pub struct CreatePolicyRequest {
 pub struct UpdatePolicyRequest {
     pub binding_id: Option<String>,
     pub wallet_id: String,
-    pub access_key_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access_key_id: Option<String>,
     pub allowed_chains: Vec<String>,
     pub allowed_actions: Vec<String>,
     pub max_single_amount: String,
@@ -62,7 +67,8 @@ pub enum MutatePolicyRequest {
     Update {
         binding_id: Option<String>,
         wallet_id: String,
-        access_key_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        access_key_id: Option<String>,
         allowed_chains: Vec<String>,
         allowed_actions: Vec<String>,
         max_single_amount: String,
