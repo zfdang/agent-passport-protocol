@@ -1,4 +1,4 @@
-use crate::canonical;
+use crate::{canonical, signatures::strip_optional_0x_prefix};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -120,19 +120,13 @@ pub struct VerifySessionCreateProofArgs<'a> {
     pub intent: CanonicalSessionCreateArgs<'a>,
 }
 
-fn strip_hex_prefix(value: &str) -> &str {
-    value
-        .strip_prefix("0x")
-        .or_else(|| value.strip_prefix("0X"))
-        .unwrap_or(value)
-}
-
+/// Returns the canonical SHA-256 payload hash used in agent proof messages.
 pub fn payload_hash_hex(payload: &str) -> String {
     format!("0x{}", hex::encode(Sha256::digest(payload.as_bytes())))
 }
 
 fn verifying_key_from_hex(public_key_hex: &str) -> Result<VerifyingKey, VerificationError> {
-    let public_key_bytes = hex::decode(strip_hex_prefix(public_key_hex))
+    let public_key_bytes = hex::decode(strip_optional_0x_prefix(public_key_hex))
         .map_err(|_| VerificationError::InvalidPublicKey)?;
     let public_key_bytes: [u8; 32] = public_key_bytes
         .try_into()
@@ -141,7 +135,7 @@ fn verifying_key_from_hex(public_key_hex: &str) -> Result<VerifyingKey, Verifica
 }
 
 fn signature_from_hex(signature_hex: &str) -> Result<Signature, VerificationError> {
-    let signature_bytes = hex::decode(strip_hex_prefix(signature_hex))
+    let signature_bytes = hex::decode(strip_optional_0x_prefix(signature_hex))
         .map_err(|_| VerificationError::InvalidSignature)?;
     Signature::from_slice(&signature_bytes).map_err(|_| VerificationError::InvalidSignature)
 }

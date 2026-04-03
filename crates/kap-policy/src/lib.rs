@@ -6,6 +6,13 @@ use kitepass_api_types::signing::SignIntent;
 pub enum PolicyError {
     #[error("policy has expired")]
     Expired,
+    #[error(
+        "policy has an invalid time window: issued_at {issued_at} must be before expires_at {expires_at}"
+    )]
+    InvalidTimeWindow {
+        issued_at: DateTime<Utc>,
+        expires_at: DateTime<Utc>,
+    },
     #[error("policy is not yet active (starts at {starts_at})")]
     NotYetActive { starts_at: DateTime<Utc> },
     #[error("access key mismatch: expected {expected}, got {actual}")]
@@ -31,6 +38,12 @@ pub fn validate_policy_config_active(
 ) -> Result<(), PolicyError> {
     if record.status != "active" {
         return Err(PolicyError::NotActive(record.status.clone()));
+    }
+    if record.issued_at >= record.expires_at {
+        return Err(PolicyError::InvalidTimeWindow {
+            issued_at: record.issued_at,
+            expires_at: record.expires_at,
+        });
     }
     if *now < record.issued_at {
         return Err(PolicyError::NotYetActive {
@@ -153,6 +166,15 @@ mod tests {
         record.issued_at = Utc::now() + Duration::hours(1);
         let err = validate_policy_config_active(&record, &Utc::now()).unwrap_err();
         assert!(matches!(err, PolicyError::NotYetActive { .. }));
+    }
+
+    #[test]
+    fn invalid_policy_time_window_is_rejected() {
+        let mut record = sample_record();
+        record.issued_at = Utc::now();
+        record.expires_at = record.issued_at;
+        let err = validate_policy_config_active(&record, &Utc::now()).unwrap_err();
+        assert!(matches!(err, PolicyError::InvalidTimeWindow { .. }));
     }
 
     #[test]

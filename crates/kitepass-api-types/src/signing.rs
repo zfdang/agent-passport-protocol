@@ -48,9 +48,7 @@ pub struct SignRequest {
     pub signing_type: String,
     pub mode: SigningMode,
     pub payload: String,
-    #[serde(default)]
     pub destination: String,
-    #[serde(default)]
     pub value: String,
     pub agent_proof: AgentProof,
 }
@@ -107,4 +105,32 @@ pub struct NormalizedIntent {
     pub payload_hash: String,
     pub destination: String,
     pub value: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SignRequest;
+
+    #[test]
+    fn sign_request_requires_destination_and_value() {
+        let error = serde_json::from_value::<SignRequest>(serde_json::json!({
+            "request_id": "req_123",
+            "idempotency_key": "idem_123",
+            "wallet_id": "wal_123",
+            "access_key_id": "aak_123",
+            "chain_id": "eip155:8453",
+            "signing_type": "transaction",
+            "mode": "signature_only",
+            "payload": "0xdeadbeef",
+            "agent_proof": {
+                "access_key_id": "aak_123",
+                "session_nonce": "nonce_123",
+                "signature": "0xsig"
+            }
+        }))
+        .unwrap_err()
+        .to_string();
+
+        assert!(error.contains("destination"));
+    }
 }
