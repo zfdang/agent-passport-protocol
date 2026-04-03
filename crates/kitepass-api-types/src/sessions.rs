@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::chains::ChainFamily;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSessionChallengeRequest {
     pub access_key_id: String,
@@ -56,7 +58,7 @@ pub struct AgentAuthorizedWallet {
     pub remaining_quota_headroom: String,
     pub binding_status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub chain_family: Option<String>,
+    pub chain_family: Option<ChainFamily>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wallet_status: Option<String>,
 }

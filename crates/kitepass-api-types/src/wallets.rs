@@ -1,12 +1,14 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::chains::ChainFamily;
+
 /// Wallet metadata (control-plane view).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wallet {
     pub wallet_id: String,
     pub owner_id: String,
-    pub chain_family: String,
+    pub chain_family: ChainFamily,
     pub status: WalletStatus,
     pub key_blob_ref: String,
     pub key_version: u64,
@@ -34,7 +36,7 @@ pub enum MutateWalletRequest {
 /// Request to create a wallet import session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateImportSessionRequest {
-    pub chain_family: String,
+    pub chain_family: ChainFamily,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
     pub idempotency_key: String,

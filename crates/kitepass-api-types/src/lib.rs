@@ -1,5 +1,6 @@
 pub mod access_keys;
 pub mod audit;
+pub mod chains;
 pub mod auth;
 pub mod errors;
 pub mod http;
