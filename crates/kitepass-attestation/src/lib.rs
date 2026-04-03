@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use subtle::ConstantTimeEq;
 
 /// TEE attestation verification result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,6 +23,8 @@ pub struct MeasurementProfile {
 pub enum AttestationError {
     #[error("attestation document parsing failed: {0}")]
     ParseError(String),
+    #[error("attestation document marked invalid")]
+    InvalidDocument,
     #[error("PCR0 mismatch: expected {expected}, got {actual}")]
     Pcr0Mismatch { expected: String, actual: String },
     #[error("PCR1 mismatch: expected {expected}, got {actual}")]
@@ -39,19 +42,22 @@ pub fn verify_measurements(
     result: &AttestationResult,
     profile: &MeasurementProfile,
 ) -> Result<(), AttestationError> {
-    if result.pcr0 != profile.pcr0 {
+    if !result.valid {
+        return Err(AttestationError::InvalidDocument);
+    }
+    if !bool::from(result.pcr0.as_bytes().ct_eq(profile.pcr0.as_bytes())) {
         return Err(AttestationError::Pcr0Mismatch {
             expected: profile.pcr0.clone(),
             actual: result.pcr0.clone(),
         });
     }
-    if result.pcr1 != profile.pcr1 {
+    if !bool::from(result.pcr1.as_bytes().ct_eq(profile.pcr1.as_bytes())) {
         return Err(AttestationError::Pcr1Mismatch {
             expected: profile.pcr1.clone(),
             actual: result.pcr1.clone(),
         });
     }
-    if result.pcr2 != profile.pcr2 {
+    if !bool::from(result.pcr2.as_bytes().ct_eq(profile.pcr2.as_bytes())) {
         return Err(AttestationError::Pcr2Mismatch {
             expected: profile.pcr2.clone(),
             actual: result.pcr2.clone(),
@@ -101,6 +107,24 @@ mod tests {
             pcr2: "ghi789".into(),
         };
         assert!(verify_measurements(&result, &profile).is_err());
+    }
+
+    #[test]
+    fn invalid_flag_fails_even_when_pcrs_match() {
+        let result = AttestationResult {
+            valid: false,
+            pcr0: "abc123".into(),
+            pcr1: "def456".into(),
+            pcr2: "ghi789".into(),
+            instance_id: "i-12345".into(),
+        };
+        let profile = MeasurementProfile {
+            pcr0: "abc123".into(),
+            pcr1: "def456".into(),
+            pcr2: "ghi789".into(),
+        };
+        let err = verify_measurements(&result, &profile).unwrap_err();
+        assert!(matches!(err, AttestationError::InvalidDocument));
     }
 
     #[test]

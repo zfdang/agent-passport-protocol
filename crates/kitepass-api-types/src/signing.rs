@@ -32,6 +32,11 @@ pub struct AgentProof {
     pub signature: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidateAgentProof {
+    pub signature: String,
+}
+
 /// Sign request body (POST /v1/signatures).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignRequest {
@@ -80,6 +85,8 @@ pub struct ValidateSignIntentRequest {
     pub payload: String,
     pub destination: String,
     pub value: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_proof: Option<ValidateAgentProof>,
 }
 
 /// Validate-only response.

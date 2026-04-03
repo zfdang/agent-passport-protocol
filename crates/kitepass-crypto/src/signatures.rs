@@ -3,6 +3,7 @@ use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::Serialize;
 use zeroize::{Zeroize, Zeroizing};
 
+#[cfg(any(test, debug_assertions))]
 pub const DEFAULT_DEV_SIGNING_PRIVATE_KEY_HEX: &str =
     "1111111111111111111111111111111111111111111111111111111111111111";
 

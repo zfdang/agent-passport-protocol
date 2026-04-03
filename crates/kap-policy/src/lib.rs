@@ -32,6 +32,11 @@ pub fn validate_policy_config_active(
     if record.status != "active" {
         return Err(PolicyError::NotActive(record.status.clone()));
     }
+    if *now < record.issued_at {
+        return Err(PolicyError::NotYetActive {
+            starts_at: record.issued_at,
+        });
+    }
     if *now > record.expires_at {
         return Err(PolicyError::Expired);
     }
@@ -140,6 +145,14 @@ mod tests {
         let mut record = sample_record();
         record.status = "deactivated".into();
         assert!(validate_policy_config_active(&record, &Utc::now()).is_err());
+    }
+
+    #[test]
+    fn future_dated_policy_is_not_yet_active() {
+        let mut record = sample_record();
+        record.issued_at = Utc::now() + Duration::hours(1);
+        let err = validate_policy_config_active(&record, &Utc::now()).unwrap_err();
+        assert!(matches!(err, PolicyError::NotYetActive { .. }));
     }
 
     #[test]
