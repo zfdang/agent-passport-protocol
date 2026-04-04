@@ -18,3 +18,8 @@ serde_json_canonicalizer = "0.3"
 rand09 = { package = "rand", version = "0.9", features = ["os_rng", "std_rng"] }
 zeroize.workspace = true
 thiserror.workspace = true
+base64 = "0.22.1"
+hkdf = "0.12.4"
+
+[dev-dependencies]
+toml = "0.8"
