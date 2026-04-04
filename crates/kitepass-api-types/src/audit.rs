@@ -2,6 +2,10 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Tamper-evident audit event.
+///
+/// **Note:** The audit ledger API (`/internal/events`, `/internal/events/verify`)
+/// is provisional and subject to breaking changes. Production deployments should
+/// not depend on the current schema or verification endpoint without coordination.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub event_id: String,

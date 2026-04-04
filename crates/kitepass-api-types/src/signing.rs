@@ -68,6 +68,8 @@ pub struct SignResponse {
     pub operation_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub poll_after_ms: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reservation_id: Option<String>,
 }
 
 /// Validate-only request body (POST /v1/sign-intents:validate).

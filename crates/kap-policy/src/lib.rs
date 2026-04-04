@@ -77,8 +77,12 @@ pub fn validate_policy_against_intent(
     Ok(())
 }
 
-/// Validate that a PolicyPermit matches the given sign intent.
-pub fn validate_permit_against_intent(
+/// Lightweight check that the permit is still valid for the given intent.
+///
+/// This validates expiry, wallet_id and access_key_id only.  Full field-level
+/// validation (chain_id, payload_hash, destination, value, etc.) is performed
+/// by the vault-signer when it verifies the cryptographic permit signature.
+pub fn validate_permit_basics(
     permit: &PolicyPermit,
     intent: &SignIntent,
     now: &DateTime<Utc>,
@@ -219,7 +223,7 @@ mod tests {
     fn valid_permit_passes() {
         let permit = sample_permit();
         let intent = sample_intent();
-        assert!(validate_permit_against_intent(&permit, &intent, &Utc::now()).is_ok());
+        assert!(validate_permit_basics(&permit, &intent, &Utc::now()).is_ok());
     }
 
     #[test]
@@ -227,7 +231,7 @@ mod tests {
         let mut permit = sample_permit();
         permit.expires_at = Utc::now() - Duration::hours(1);
         let intent = sample_intent();
-        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        let err = validate_permit_basics(&permit, &intent, &Utc::now()).unwrap_err();
         assert!(matches!(err, PolicyError::PermitExpired));
     }
 
@@ -236,7 +240,7 @@ mod tests {
         let mut permit = sample_permit();
         permit.wallet_id = "wal_wrong".into();
         let intent = sample_intent();
-        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        let err = validate_permit_basics(&permit, &intent, &Utc::now()).unwrap_err();
         assert!(matches!(err, PolicyError::PermitWalletMismatch));
     }
 
@@ -245,7 +249,7 @@ mod tests {
         let mut permit = sample_permit();
         permit.access_key_id = "aak_wrong".into();
         let intent = sample_intent();
-        let err = validate_permit_against_intent(&permit, &intent, &Utc::now()).unwrap_err();
+        let err = validate_permit_basics(&permit, &intent, &Utc::now()).unwrap_err();
         assert!(matches!(err, PolicyError::PermitAccessKeyMismatch));
     }
 }
