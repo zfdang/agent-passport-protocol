@@ -134,6 +134,40 @@ pub struct FinalizeAgentPassportResponse {
     pub bindings: Vec<BindingResult>,
 }
 
+impl From<&ProvisioningIntent> for ProvisioningIntentPayload {
+    fn from(intent: &ProvisioningIntent) -> Self {
+        Self {
+            principal_account_id: intent.principal_account_id.clone(),
+            operation: intent.operation.clone(),
+            public_key: intent.public_key.clone(),
+            key_address: intent.key_address.clone(),
+            expires_at: intent.expires_at,
+            bindings: intent.bindings.clone(),
+            issued_at: intent.issued_at,
+            intent_expires_at: intent.intent_expires_at,
+            nonce: intent.nonce.clone(),
+        }
+    }
+}
+
+impl From<&PrincipalApprovalRecord> for PrincipalApprovalPayload {
+    fn from(approval: &PrincipalApprovalRecord) -> Self {
+        Self {
+            principal_approval_id: approval.principal_approval_id.clone(),
+            record_type: approval.record_type.clone(),
+            record_version: approval.record_version,
+            principal_account_id: approval.principal_account_id.clone(),
+            intent_id: approval.intent_id.clone(),
+            intent_hash: approval.intent_hash.clone(),
+            operation: approval.operation.clone(),
+            approval_method: approval.approval_method.clone(),
+            approved_at: approval.approved_at,
+            expires_at: approval.expires_at,
+            approver_key_ref: approval.approver_key_ref.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,39 +275,5 @@ mod tests {
         );
         assert_eq!(decoded.approval_method, "passkey");
         assert_eq!(decoded.principal_approval_signature, "sig-approval");
-    }
-}
-
-impl From<&ProvisioningIntent> for ProvisioningIntentPayload {
-    fn from(intent: &ProvisioningIntent) -> Self {
-        Self {
-            principal_account_id: intent.principal_account_id.clone(),
-            operation: intent.operation.clone(),
-            public_key: intent.public_key.clone(),
-            key_address: intent.key_address.clone(),
-            expires_at: intent.expires_at,
-            bindings: intent.bindings.clone(),
-            issued_at: intent.issued_at,
-            intent_expires_at: intent.intent_expires_at,
-            nonce: intent.nonce.clone(),
-        }
-    }
-}
-
-impl From<&PrincipalApprovalRecord> for PrincipalApprovalPayload {
-    fn from(approval: &PrincipalApprovalRecord) -> Self {
-        Self {
-            principal_approval_id: approval.principal_approval_id.clone(),
-            record_type: approval.record_type.clone(),
-            record_version: approval.record_version,
-            principal_account_id: approval.principal_account_id.clone(),
-            intent_id: approval.intent_id.clone(),
-            intent_hash: approval.intent_hash.clone(),
-            operation: approval.operation.clone(),
-            approval_method: approval.approval_method.clone(),
-            approved_at: approval.approved_at,
-            expires_at: approval.expires_at,
-            approver_key_ref: approval.approver_key_ref.clone(),
-        }
     }
 }

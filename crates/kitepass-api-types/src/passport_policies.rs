@@ -256,6 +256,29 @@ impl From<&PassportPolicyConfigRecord> for PassportPolicyConfigRecordPayload {
     }
 }
 
+impl From<&PassportPolicyPermit> for PassportPolicyPermitPayload {
+    fn from(permit: &PassportPolicyPermit) -> Self {
+        Self {
+            record_type: permit.record_type.clone(),
+            record_version: permit.record_version,
+            permit_id: permit.permit_id.clone(),
+            request_id: permit.request_id.clone(),
+            wallet_id: permit.wallet_id.clone(),
+            agent_passport_id: permit.agent_passport_id.clone(),
+            chain_id: permit.chain_id.clone(),
+            signing_type: permit.signing_type.clone(),
+            payload_hash: permit.payload_hash.clone(),
+            destination: permit.destination.clone(),
+            value: permit.value.clone(),
+            reservation_id: permit.reservation_id.clone(),
+            passport_policy_id: permit.passport_policy_id.clone(),
+            passport_policy_version: permit.passport_policy_version,
+            issued_at: permit.issued_at,
+            expires_at: permit.expires_at,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -394,28 +417,5 @@ mod tests {
         assert_eq!(decoded.daily_spent, "1000000");
         assert_eq!(decoded.passport_policy_version, 2);
         assert_eq!(decoded.last_consumed_request_id, "req-099");
-    }
-}
-
-impl From<&PassportPolicyPermit> for PassportPolicyPermitPayload {
-    fn from(permit: &PassportPolicyPermit) -> Self {
-        Self {
-            record_type: permit.record_type.clone(),
-            record_version: permit.record_version,
-            permit_id: permit.permit_id.clone(),
-            request_id: permit.request_id.clone(),
-            wallet_id: permit.wallet_id.clone(),
-            agent_passport_id: permit.agent_passport_id.clone(),
-            chain_id: permit.chain_id.clone(),
-            signing_type: permit.signing_type.clone(),
-            payload_hash: permit.payload_hash.clone(),
-            destination: permit.destination.clone(),
-            value: permit.value.clone(),
-            reservation_id: permit.reservation_id.clone(),
-            passport_policy_id: permit.passport_policy_id.clone(),
-            passport_policy_version: permit.passport_policy_version,
-            issued_at: permit.issued_at,
-            expires_at: permit.expires_at,
-        }
     }
 }
