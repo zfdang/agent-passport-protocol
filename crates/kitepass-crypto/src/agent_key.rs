@@ -13,7 +13,7 @@ pub enum AgentKeyError {
     ParseError(String),
 }
 
-/// Represents an Ed25519 Agent Access Key.
+/// Represents an Ed25519 Agent Passport.
 pub struct AgentKey {
     signing_key: SigningKey,
 }

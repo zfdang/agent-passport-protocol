@@ -1,18 +1,18 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::access_keys::{BindingInput, BindingResult};
+use crate::agent_passports::{BindingInput, BindingResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProvisioningOperation {
-    CreateAgentAccessKey,
+    CreateAgentPassport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProvisioningApprovalStatus {
-    PendingOwnerStepUp,
+    PendingPrincipalStepUp,
     Approved,
     Consumed,
     Expired,
@@ -21,7 +21,7 @@ pub enum ProvisioningApprovalStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProvisioningIntentPayload {
-    pub owner_id: String,
+    pub principal_account_id: String,
     pub operation: ProvisioningOperation,
     pub public_key: String,
     pub key_address: String,
@@ -35,7 +35,7 @@ pub struct ProvisioningIntentPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProvisioningIntent {
     pub intent_id: String,
-    pub owner_id: String,
+    pub principal_account_id: String,
     pub operation: ProvisioningOperation,
     pub public_key: String,
     pub key_address: String,
@@ -46,13 +46,13 @@ pub struct ProvisioningIntent {
     pub nonce: String,
     pub intent_hash: String,
     pub approval_status: ProvisioningApprovalStatus,
-    pub owner_approval_id: Option<String>,
-    pub owner_approval_expires_at: Option<DateTime<Utc>>,
+    pub principal_approval_id: Option<String>,
+    pub principal_approval_expires_at: Option<DateTime<Utc>>,
     pub consumed_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PrepareAccessKeyRequest {
+pub struct PrepareAgentPassportRequest {
     pub public_key: String,
     pub key_address: String,
     pub expires_at: DateTime<Utc>,
@@ -61,7 +61,7 @@ pub struct PrepareAccessKeyRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PrepareAccessKeyResponse {
+pub struct PrepareAgentPassportResponse {
     pub intent_id: String,
     pub intent_hash: String,
     pub approval_url: String,
@@ -74,8 +74,8 @@ pub struct GetProvisioningIntentResponse {
     pub intent_id: String,
     pub intent_hash: String,
     pub approval_status: ProvisioningApprovalStatus,
-    pub owner_approval_id: Option<String>,
-    pub owner_approval_expires_at: Option<DateTime<Utc>>,
+    pub principal_approval_id: Option<String>,
+    pub principal_approval_expires_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,23 +84,23 @@ pub struct ListProvisioningIntentsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ListOwnerApprovalsResponse {
-    pub owner_approvals: Vec<OwnerApprovalRecord>,
+pub struct ListPrincipalApprovalsResponse {
+    pub principal_approvals: Vec<PrincipalApprovalRecord>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FinalizeAccessKeyRequest {
+pub struct FinalizeAgentPassportRequest {
     pub intent_id: String,
-    pub owner_approval_id: String,
+    pub principal_approval_id: String,
     pub idempotency_key: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OwnerApprovalRecord {
-    pub owner_approval_id: String,
+pub struct PrincipalApprovalRecord {
+    pub principal_approval_id: String,
     pub record_type: String,
     pub record_version: u32,
-    pub owner_id: String,
+    pub principal_account_id: String,
     pub intent_id: String,
     pub intent_hash: String,
     pub operation: ProvisioningOperation,
@@ -108,15 +108,15 @@ pub struct OwnerApprovalRecord {
     pub approved_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub approver_key_ref: String,
-    pub owner_approval_signature: String,
+    pub principal_approval_signature: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OwnerApprovalPayload {
-    pub owner_approval_id: String,
+pub struct PrincipalApprovalPayload {
+    pub principal_approval_id: String,
     pub record_type: String,
     pub record_version: u32,
-    pub owner_id: String,
+    pub principal_account_id: String,
     pub intent_id: String,
     pub intent_hash: String,
     pub operation: ProvisioningOperation,
@@ -127,17 +127,127 @@ pub struct OwnerApprovalPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FinalizeAccessKeyResponse {
-    pub access_key_id: String,
+pub struct FinalizeAgentPassportResponse {
+    pub agent_passport_id: String,
     pub status: String,
-    pub owner_approval_status: String,
+    pub principal_approval_status: String,
     pub bindings: Vec<BindingResult>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    #[test]
+    fn provisioning_intent_roundtrip() {
+        let now = Utc::now();
+        let intent = ProvisioningIntent {
+            intent_id: "intent-001".into(),
+            principal_account_id: "pa-001".into(),
+            operation: ProvisioningOperation::CreateAgentPassport,
+            public_key: "0xpub".into(),
+            key_address: "0xaddr".into(),
+            expires_at: now,
+            bindings: vec![BindingInput {
+                wallet_id: "w-001".into(),
+                passport_policy_id: "pp-001".into(),
+                passport_policy_version: 1,
+                is_default: true,
+                selection_priority: 5,
+            }],
+            issued_at: now,
+            intent_expires_at: now,
+            nonce: "nonce-abc".into(),
+            intent_hash: "hash-intent".into(),
+            approval_status: ProvisioningApprovalStatus::Approved,
+            principal_approval_id: Some("approval-001".into()),
+            principal_approval_expires_at: Some(now),
+            consumed_at: None,
+        };
+        let json = serde_json::to_string(&intent).unwrap();
+        let decoded: ProvisioningIntent = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.intent_id, "intent-001");
+        assert_eq!(
+            decoded.operation,
+            ProvisioningOperation::CreateAgentPassport
+        );
+        assert_eq!(
+            decoded.approval_status,
+            ProvisioningApprovalStatus::Approved
+        );
+        assert_eq!(decoded.principal_approval_id, Some("approval-001".into()));
+        assert_eq!(decoded.consumed_at, None);
+        assert_eq!(decoded.bindings.len(), 1);
+    }
+
+    #[test]
+    fn provisioning_operation_serialization() {
+        assert_eq!(
+            serde_json::to_string(&ProvisioningOperation::CreateAgentPassport).unwrap(),
+            "\"create_agent_passport\""
+        );
+    }
+
+    #[test]
+    fn provisioning_approval_status_serialization() {
+        assert_eq!(
+            serde_json::to_string(&ProvisioningApprovalStatus::PendingPrincipalStepUp).unwrap(),
+            "\"pending_principal_step_up\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ProvisioningApprovalStatus::Approved).unwrap(),
+            "\"approved\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ProvisioningApprovalStatus::Consumed).unwrap(),
+            "\"consumed\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ProvisioningApprovalStatus::Expired).unwrap(),
+            "\"expired\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ProvisioningApprovalStatus::Rejected).unwrap(),
+            "\"rejected\""
+        );
+    }
+
+    #[test]
+    fn principal_approval_record_roundtrip() {
+        let now = Utc::now();
+        let record = PrincipalApprovalRecord {
+            principal_approval_id: "approval-001".into(),
+            record_type: "principal_approval".into(),
+            record_version: 1,
+            principal_account_id: "pa-001".into(),
+            intent_id: "intent-001".into(),
+            intent_hash: "hash-intent".into(),
+            operation: ProvisioningOperation::CreateAgentPassport,
+            approval_method: "passkey".into(),
+            approved_at: now,
+            expires_at: now,
+            approver_key_ref: "key-ref-001".into(),
+            principal_approval_signature: "sig-approval".into(),
+        };
+        let json = serde_json::to_string(&record).unwrap();
+        let decoded: PrincipalApprovalRecord = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.principal_approval_id, "approval-001");
+        assert_eq!(decoded.record_type, "principal_approval");
+        assert_eq!(decoded.record_version, 1);
+        assert_eq!(
+            decoded.operation,
+            ProvisioningOperation::CreateAgentPassport
+        );
+        assert_eq!(decoded.approval_method, "passkey");
+        assert_eq!(decoded.principal_approval_signature, "sig-approval");
+    }
 }
 
 impl From<&ProvisioningIntent> for ProvisioningIntentPayload {
     fn from(intent: &ProvisioningIntent) -> Self {
         Self {
-            owner_id: intent.owner_id.clone(),
+            principal_account_id: intent.principal_account_id.clone(),
             operation: intent.operation.clone(),
             public_key: intent.public_key.clone(),
             key_address: intent.key_address.clone(),
@@ -150,13 +260,13 @@ impl From<&ProvisioningIntent> for ProvisioningIntentPayload {
     }
 }
 
-impl From<&OwnerApprovalRecord> for OwnerApprovalPayload {
-    fn from(approval: &OwnerApprovalRecord) -> Self {
+impl From<&PrincipalApprovalRecord> for PrincipalApprovalPayload {
+    fn from(approval: &PrincipalApprovalRecord) -> Self {
         Self {
-            owner_approval_id: approval.owner_approval_id.clone(),
+            principal_approval_id: approval.principal_approval_id.clone(),
             record_type: approval.record_type.clone(),
             record_version: approval.record_version,
-            owner_id: approval.owner_id.clone(),
+            principal_account_id: approval.principal_account_id.clone(),
             intent_id: approval.intent_id.clone(),
             intent_hash: approval.intent_hash.clone(),
             operation: approval.operation.clone(),

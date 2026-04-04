@@ -118,7 +118,7 @@ mod tests {
             r#"{{"scheme":"{}","session":"wis_123"}}"#,
             IMPORT_ENCRYPTION_SCHEME
         );
-        let aad = br#"{"owner_id":"own_123","request_id":"req_123"}"#;
+        let aad = br#"{"principal_account_id":"pac_123","request_id":"req_123"}"#;
         let sealed = seal_to_hex(
             &keypair.public_key_hex,
             info.as_bytes(),

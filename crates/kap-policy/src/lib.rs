@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use kitepass_api_types::policies::{PolicyConfigRecord, PolicyPermit};
+use kitepass_api_types::passport_policies::{PassportPolicyConfigRecord, PassportPolicyPermit};
 use kitepass_api_types::signing::SignIntent;
 
 #[derive(Debug, thiserror::Error)]
@@ -15,8 +15,8 @@ pub enum PolicyError {
     },
     #[error("policy is not yet active (starts at {starts_at})")]
     NotYetActive { starts_at: DateTime<Utc> },
-    #[error("access key mismatch: expected {expected}, got {actual}")]
-    AccessKeyMismatch { expected: String, actual: String },
+    #[error("agent passport mismatch: expected {expected}, got {actual}")]
+    AgentPassportMismatch { expected: String, actual: String },
     #[error("wallet mismatch: expected {expected}, got {actual}")]
     WalletMismatch { expected: String, actual: String },
     #[error("policy version mismatch")]
@@ -25,15 +25,15 @@ pub enum PolicyError {
     PermitExpired,
     #[error("permit wallet mismatch")]
     PermitWalletMismatch,
-    #[error("permit access key mismatch")]
-    PermitAccessKeyMismatch,
+    #[error("permit agent passport mismatch")]
+    PermitAgentPassportMismatch,
     #[error("policy config record status is not active: {0}")]
     NotActive(String),
 }
 
-/// Validate that a PolicyConfigRecord is currently valid and active.
+/// Validate that a PassportPolicyConfigRecord is currently valid and active.
 pub fn validate_policy_config_active(
-    record: &PolicyConfigRecord,
+    record: &PassportPolicyConfigRecord,
     now: &DateTime<Utc>,
 ) -> Result<(), PolicyError> {
     if record.status != "active" {
@@ -56,16 +56,16 @@ pub fn validate_policy_config_active(
     Ok(())
 }
 
-/// Validate that a PolicyConfigRecord matches the given sign intent
-/// on the fields that Vault Signer mirrors (access_key_id, wallet_id).
+/// Validate that a PassportPolicyConfigRecord matches the given sign intent
+/// on the fields that Vault Signer mirrors (agent_passport_id, wallet_id).
 pub fn validate_policy_against_intent(
-    record: &PolicyConfigRecord,
+    record: &PassportPolicyConfigRecord,
     intent: &SignIntent,
 ) -> Result<(), PolicyError> {
-    if record.access_key_id != intent.access_key_id {
-        return Err(PolicyError::AccessKeyMismatch {
-            expected: record.access_key_id.clone(),
-            actual: intent.access_key_id.clone(),
+    if record.agent_passport_id != intent.agent_passport_id {
+        return Err(PolicyError::AgentPassportMismatch {
+            expected: record.agent_passport_id.clone(),
+            actual: intent.agent_passport_id.clone(),
         });
     }
     if record.wallet_id != intent.wallet_id {
@@ -79,11 +79,11 @@ pub fn validate_policy_against_intent(
 
 /// Lightweight check that the permit is still valid for the given intent.
 ///
-/// This validates expiry, wallet_id and access_key_id only.  Full field-level
+/// This validates expiry, wallet_id and agent_passport_id only.  Full field-level
 /// validation (chain_id, payload_hash, destination, value, etc.) is performed
 /// by the vault-signer when it verifies the cryptographic permit signature.
 pub fn validate_permit_basics(
-    permit: &PolicyPermit,
+    permit: &PassportPolicyPermit,
     intent: &SignIntent,
     now: &DateTime<Utc>,
 ) -> Result<(), PolicyError> {
@@ -93,8 +93,8 @@ pub fn validate_permit_basics(
     if permit.wallet_id != intent.wallet_id {
         return Err(PolicyError::PermitWalletMismatch);
     }
-    if permit.access_key_id != intent.access_key_id {
-        return Err(PolicyError::PermitAccessKeyMismatch);
+    if permit.agent_passport_id != intent.agent_passport_id {
+        return Err(PolicyError::PermitAgentPassportMismatch);
     }
     Ok(())
 }
@@ -105,23 +105,23 @@ mod tests {
     use chrono::Duration;
     use kitepass_api_types::signing::SigningMode;
 
-    fn sample_record() -> PolicyConfigRecord {
+    fn sample_record() -> PassportPolicyConfigRecord {
         let now = Utc::now();
-        PolicyConfigRecord {
+        PassportPolicyConfigRecord {
             record_type: "policy_config_record".into(),
             record_version: 1,
             binding_id: "bind_1".into(),
-            access_key_id: "aak_1".into(),
+            agent_passport_id: "agp_1".into(),
             wallet_id: "wal_1".into(),
             public_key: "abcd1234".into(),
             status: "active".into(),
             expires_at: now + Duration::hours(23),
-            policy_id: "pol_1".into(),
-            policy_version: 1,
+            passport_policy_id: "pol_1".into(),
+            passport_policy_version: 1,
             provisioning_intent_id: "pi_1".into(),
             provisioning_intent_hash: "hash_1".into(),
-            owner_approval_id: "oa_1".into(),
-            owner_approval_hash: "approval_1".into(),
+            principal_approval_id: "oa_1".into(),
+            principal_approval_hash: "approval_1".into(),
             issued_at: now - Duration::hours(1),
             policy_config_signature: "sig_1".into(),
         }
@@ -133,7 +133,7 @@ mod tests {
             intent_version: 1,
             request_id: "req_1".into(),
             wallet_id: "wal_1".into(),
-            access_key_id: "aak_1".into(),
+            agent_passport_id: "agp_1".into(),
             chain_id: "eip155:84532".into(),
             signing_type: "eth_signTransaction".into(),
             payload_hash: "0xdeadbeef".into(),
@@ -189,30 +189,30 @@ mod tests {
     }
 
     #[test]
-    fn wrong_access_key_rejected() {
+    fn wrong_agent_passport_rejected() {
         let record = sample_record();
         let mut intent = sample_intent();
-        intent.access_key_id = "aak_wrong".into();
+        intent.agent_passport_id = "agp_wrong".into();
         assert!(validate_policy_against_intent(&record, &intent).is_err());
     }
 
-    fn sample_permit() -> PolicyPermit {
+    fn sample_permit() -> PassportPolicyPermit {
         let now = Utc::now();
-        PolicyPermit {
+        PassportPolicyPermit {
             record_type: "policy_permit".into(),
             record_version: 1,
             permit_id: "permit_1".into(),
             request_id: "req_1".into(),
             wallet_id: "wal_1".into(),
-            access_key_id: "aak_1".into(),
+            agent_passport_id: "agp_1".into(),
             chain_id: "eip155:84532".into(),
             signing_type: "eth_signTransaction".into(),
             payload_hash: "0xdeadbeef".into(),
             destination: "0x1234".into(),
             value: "1000".into(),
             reservation_id: "res_1".into(),
-            policy_id: "pol_1".into(),
-            policy_version: 1,
+            passport_policy_id: "pol_1".into(),
+            passport_policy_version: 1,
             issued_at: now,
             expires_at: now + Duration::hours(1),
             signature: "sig_permit".into(),
@@ -245,11 +245,11 @@ mod tests {
     }
 
     #[test]
-    fn permit_access_key_mismatch_rejected() {
+    fn permit_agent_passport_mismatch_rejected() {
         let mut permit = sample_permit();
-        permit.access_key_id = "aak_wrong".into();
+        permit.agent_passport_id = "agp_wrong".into();
         let intent = sample_intent();
         let err = validate_permit_basics(&permit, &intent, &Utc::now()).unwrap_err();
-        assert!(matches!(err, PolicyError::PermitAccessKeyMismatch));
+        assert!(matches!(err, PolicyError::PermitAgentPassportMismatch));
     }
 }

@@ -16,7 +16,7 @@ pub enum EncryptionError {
     EncryptionFailed,
     #[error("Decryption failed")]
     DecryptionFailed,
-    #[error("Invalid Combined Token format")]
+    #[error("Invalid Agent Passport Token format")]
     InvalidTokenFormat,
     #[error("Base64 decode error: {0}")]
     Base64Decode(#[from] base64::DecodeError),
@@ -28,36 +28,36 @@ pub enum EncryptionError {
     KeyDerivationFailed(&'static str),
 }
 
-// ── Combined Token ──────────────────────────────────────
+// ── Agent Passport Token ──────────────────────────────────────
 
-const TOKEN_PREFIX: &str = "kite_tk_";
+const TOKEN_PREFIX: &str = "kite_apt_";
 const TOKEN_DELIMITER: &str = "__";
-const MAX_ACCESS_KEY_ID_LEN: usize = 255;
+const MAX_AGENT_PASSPORT_ID_LEN: usize = 255;
 
-/// Parsed representation of `kite_tk_<access_key_id>__<secret_key>`.
+/// Parsed representation of `kite_apt_<agent_passport_id>__<secret_key>`.
 #[derive(Debug, Clone)]
-pub struct CombinedToken {
-    pub access_key_id: String,
+pub struct AgentPassportToken {
+    pub agent_passport_id: String,
     pub secret_key: Zeroizing<String>,
 }
 
-impl CombinedToken {
-    /// Parses a Combined Token string.
+impl AgentPassportToken {
+    /// Parses a Agent Passport Token string.
     ///
-    /// Format: `kite_tk_<access_key_id>__<secret_key>`
-    /// where `access_key_id` starts with `aak_`.
+    /// Format: `kite_apt_<agent_passport_id>__<secret_key>`
+    /// where `agent_passport_id` starts with `agp_`.
     pub fn parse(token: &str) -> Result<Self, EncryptionError> {
         let rest = token
             .strip_prefix(TOKEN_PREFIX)
             .ok_or(EncryptionError::InvalidTokenFormat)?;
 
-        let (access_key_id, secret_key) = rest
+        let (agent_passport_id, secret_key) = rest
             .split_once(TOKEN_DELIMITER)
             .ok_or(EncryptionError::InvalidTokenFormat)?;
 
-        if !access_key_id.starts_with("aak_")
-            || access_key_id.len() < 5
-            || access_key_id.len() > MAX_ACCESS_KEY_ID_LEN
+        if !agent_passport_id.starts_with("agp_")
+            || agent_passport_id.len() < 5
+            || agent_passport_id.len() > MAX_AGENT_PASSPORT_ID_LEN
         {
             return Err(EncryptionError::InvalidTokenFormat);
         }
@@ -68,14 +68,14 @@ impl CombinedToken {
         }
 
         Ok(Self {
-            access_key_id: access_key_id.to_string(),
+            agent_passport_id: agent_passport_id.to_string(),
             secret_key: Zeroizing::new(secret_key.to_string()),
         })
     }
 
-    /// Formats a Combined Token from its components.
-    pub fn format(access_key_id: &str, secret_key: &str) -> String {
-        format!("{TOKEN_PREFIX}{access_key_id}{TOKEN_DELIMITER}{secret_key}")
+    /// Formats a Agent Passport Token from its components.
+    pub fn format(agent_passport_id: &str, secret_key: &str) -> String {
+        format!("{TOKEN_PREFIX}{agent_passport_id}{TOKEN_DELIMITER}{secret_key}")
     }
 }
 
@@ -95,7 +95,7 @@ pub struct CryptoEnvelope {
 }
 
 impl CryptoEnvelope {
-    /// Encrypts a private key (PEM bytes) using the secret from a Combined Token.
+    /// Encrypts a private key (PEM bytes) using the secret from a Agent Passport Token.
     ///
     /// Uses HKDF-SHA256 for key derivation and AES-256-GCM for encryption.
     pub fn encrypt(plaintext: &[u8], secret_key: &str) -> Result<Self, EncryptionError> {
@@ -129,7 +129,7 @@ impl CryptoEnvelope {
         })
     }
 
-    /// Decrypts the envelope using the secret from a Combined Token.
+    /// Decrypts the envelope using the secret from a Agent Passport Token.
     pub fn decrypt(&self, secret_key: &str) -> Result<Zeroizing<Vec<u8>>, EncryptionError> {
         if self.cipher != CIPHER_AES256GCM {
             return Err(EncryptionError::UnsupportedCipher(self.cipher.clone()));
@@ -162,7 +162,7 @@ impl CryptoEnvelope {
     }
 }
 
-/// Generates a random secret key for Combined Token (32 bytes, hex-encoded → 64 chars).
+/// Generates a random secret key for Agent Passport Token (32 bytes, hex-encoded → 64 chars).
 pub fn generate_secret_key() -> Zeroizing<String> {
     let mut secret = [0u8; 32];
     OsRng.fill_bytes(&mut secret);
@@ -177,50 +177,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn combined_token_round_trip() {
+    fn agent_passport_token_round_trip() {
         let secret = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
-        let formatted = CombinedToken::format("aak_abc123", secret);
+        let formatted = AgentPassportToken::format("agp_abc123", secret);
         assert_eq!(
             formatted,
-            "kite_tk_aak_abc123__a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+            "kite_apt_agp_abc123__a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
         );
 
-        let parsed = CombinedToken::parse(&formatted).unwrap();
-        assert_eq!(parsed.access_key_id, "aak_abc123");
+        let parsed = AgentPassportToken::parse(&formatted).unwrap();
+        assert_eq!(parsed.agent_passport_id, "agp_abc123");
         assert_eq!(*parsed.secret_key, secret);
     }
 
     #[test]
-    fn combined_token_rejects_invalid_prefix() {
-        assert!(CombinedToken::parse("bad_prefix_aak_123_secret").is_err());
+    fn agent_passport_token_rejects_invalid_prefix() {
+        assert!(AgentPassportToken::parse("bad_prefix_agp_123_secret").is_err());
     }
 
     #[test]
-    fn combined_token_rejects_missing_aak_prefix() {
-        assert!(CombinedToken::parse("kite_tk_xyz_123_secret").is_err());
+    fn agent_passport_token_rejects_missing_agp_prefix() {
+        assert!(AgentPassportToken::parse("kite_apt_xyz_123_secret").is_err());
     }
 
     #[test]
-    fn combined_token_rejects_empty_secret() {
-        assert!(CombinedToken::parse("kite_tk_aak_abc__").is_err());
+    fn agent_passport_token_rejects_empty_secret() {
+        assert!(AgentPassportToken::parse("kite_apt_agp_abc__").is_err());
     }
 
     #[test]
-    fn combined_token_supports_access_key_ids_with_additional_underscores() {
+    fn agent_passport_token_supports_agent_passport_ids_with_additional_underscores() {
         let secret = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
-        let formatted = CombinedToken::format("aak_alpha_beta", secret);
-        let parsed = CombinedToken::parse(&formatted).unwrap();
-        assert_eq!(parsed.access_key_id, "aak_alpha_beta");
+        let formatted = AgentPassportToken::format("agp_alpha_beta", secret);
+        let parsed = AgentPassportToken::parse(&formatted).unwrap();
+        assert_eq!(parsed.agent_passport_id, "agp_alpha_beta");
         assert_eq!(*parsed.secret_key, secret);
     }
 
     #[test]
-    fn combined_token_rejects_overlong_access_key_ids() {
+    fn agent_passport_token_rejects_overlong_agent_passport_ids() {
         let secret = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
-        let access_key_id = format!("aak_{}", "x".repeat(MAX_ACCESS_KEY_ID_LEN));
-        let formatted = CombinedToken::format(&access_key_id, secret);
+        let agent_passport_id = format!("agp_{}", "x".repeat(MAX_AGENT_PASSPORT_ID_LEN));
+        let formatted = AgentPassportToken::format(&agent_passport_id, secret);
         assert!(matches!(
-            CombinedToken::parse(&formatted),
+            AgentPassportToken::parse(&formatted),
             Err(EncryptionError::InvalidTokenFormat)
         ));
     }

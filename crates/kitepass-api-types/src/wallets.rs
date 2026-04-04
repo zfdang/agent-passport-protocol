@@ -7,7 +7,7 @@ use crate::chains::ChainFamily;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wallet {
     pub wallet_id: String,
-    pub owner_id: String,
+    pub principal_account_id: String,
     pub chain_family: ChainFamily,
     pub status: WalletStatus,
     pub key_blob_ref: String,
@@ -131,8 +131,8 @@ pub struct AttestationBundleDocument {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChannelBinding {
-    pub owner_id: String,
-    pub owner_session_id: String,
+    pub principal_account_id: String,
+    pub principal_session_id: String,
     pub request_id: String,
 }
 
@@ -147,8 +147,8 @@ pub struct UploadImportEnvelopeRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportAad {
-    pub owner_id: String,
-    pub owner_session_id: String,
+    pub principal_account_id: String,
+    pub principal_session_id: String,
     pub request_id: String,
     pub vault_signer_instance_id: String,
 }
