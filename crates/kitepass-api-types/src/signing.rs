@@ -7,7 +7,7 @@ pub struct SignIntent {
     pub intent_version: u32,
     pub request_id: String,
     pub wallet_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub chain_id: String,
     pub signing_type: String,
     pub payload_hash: String,
@@ -27,7 +27,7 @@ pub enum SigningMode {
 /// Agent proof-of-possession.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentProof {
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub session_nonce: String,
     pub signature: String,
 }
@@ -43,7 +43,7 @@ pub struct SignRequest {
     pub request_id: String,
     pub idempotency_key: String,
     pub wallet_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub chain_id: String,
     pub signing_type: String,
     pub mode: SigningMode,
@@ -79,7 +79,7 @@ pub struct ValidateSignIntentRequest {
     pub request_id: String,
     pub wallet_id: Option<String>,
     pub wallet_selector: Option<String>,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub chain_id: String,
     pub signing_type: String,
     pub payload: String,
@@ -119,13 +119,13 @@ mod tests {
             "request_id": "req_123",
             "idempotency_key": "idem_123",
             "wallet_id": "wal_123",
-            "agent_passport_id": "agp_123",
+            "passport_id": "agp_123",
             "chain_id": "eip155:8453",
             "signing_type": "transaction",
             "mode": "signature_only",
             "payload": "0xdeadbeef",
             "agent_proof": {
-                "agent_passport_id": "agp_123",
+                "passport_id": "agp_123",
                 "session_nonce": "nonce_123",
                 "signature": "0xsig"
             }

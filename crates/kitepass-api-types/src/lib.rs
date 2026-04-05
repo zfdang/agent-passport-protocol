@@ -1,10 +1,10 @@
-pub mod agent_passports;
 pub mod audit;
 pub mod chains;
 pub mod errors;
 pub mod http;
 pub mod operations;
 pub mod passport_policies;
+pub mod passports;
 pub mod principal_auth;
 pub mod provisioning;
 pub mod relayer;

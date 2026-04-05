@@ -1,12 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::agent_passports::{BindingInput, BindingResult};
+use crate::passports::{BindingInput, BindingResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProvisioningOperation {
-    CreateAgentPassport,
+    CreatePassport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -52,7 +52,7 @@ pub struct ProvisioningIntent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PrepareAgentPassportRequest {
+pub struct PreparePassportRequest {
     pub public_key: String,
     pub key_address: String,
     pub expires_at: DateTime<Utc>,
@@ -61,7 +61,7 @@ pub struct PrepareAgentPassportRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PrepareAgentPassportResponse {
+pub struct PreparePassportResponse {
     pub intent_id: String,
     pub intent_hash: String,
     pub approval_url: String,
@@ -89,7 +89,7 @@ pub struct ListPrincipalApprovalsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FinalizeAgentPassportRequest {
+pub struct FinalizePassportRequest {
     pub intent_id: String,
     pub principal_approval_id: String,
     pub idempotency_key: String,
@@ -127,8 +127,8 @@ pub struct PrincipalApprovalPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FinalizeAgentPassportResponse {
-    pub agent_passport_id: String,
+pub struct FinalizePassportResponse {
+    pub passport_id: String,
     pub status: String,
     pub principal_approval_status: String,
     pub bindings: Vec<BindingResult>,
@@ -179,7 +179,7 @@ mod tests {
         let intent = ProvisioningIntent {
             intent_id: "intent-001".into(),
             principal_account_id: "pa-001".into(),
-            operation: ProvisioningOperation::CreateAgentPassport,
+            operation: ProvisioningOperation::CreatePassport,
             public_key: "0xpub".into(),
             key_address: "0xaddr".into(),
             expires_at: now,
@@ -202,10 +202,7 @@ mod tests {
         let json = serde_json::to_string(&intent).unwrap();
         let decoded: ProvisioningIntent = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.intent_id, "intent-001");
-        assert_eq!(
-            decoded.operation,
-            ProvisioningOperation::CreateAgentPassport
-        );
+        assert_eq!(decoded.operation, ProvisioningOperation::CreatePassport);
         assert_eq!(
             decoded.approval_status,
             ProvisioningApprovalStatus::Approved
@@ -218,8 +215,8 @@ mod tests {
     #[test]
     fn provisioning_operation_serialization() {
         assert_eq!(
-            serde_json::to_string(&ProvisioningOperation::CreateAgentPassport).unwrap(),
-            "\"create_agent_passport\""
+            serde_json::to_string(&ProvisioningOperation::CreatePassport).unwrap(),
+            "\"create_passport\""
         );
     }
 
@@ -257,7 +254,7 @@ mod tests {
             principal_account_id: "pa-001".into(),
             intent_id: "intent-001".into(),
             intent_hash: "hash-intent".into(),
-            operation: ProvisioningOperation::CreateAgentPassport,
+            operation: ProvisioningOperation::CreatePassport,
             approval_method: "passkey".into(),
             approved_at: now,
             expires_at: now,
@@ -269,10 +266,7 @@ mod tests {
         assert_eq!(decoded.principal_approval_id, "approval-001");
         assert_eq!(decoded.record_type, "principal_approval");
         assert_eq!(decoded.record_version, 1);
-        assert_eq!(
-            decoded.operation,
-            ProvisioningOperation::CreateAgentPassport
-        );
+        assert_eq!(decoded.operation, ProvisioningOperation::CreatePassport);
         assert_eq!(decoded.approval_method, "passkey");
         assert_eq!(decoded.principal_approval_signature, "sig-approval");
     }

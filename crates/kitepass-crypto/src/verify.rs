@@ -23,7 +23,7 @@ struct CanonicalAgentIntent<'a> {
     intent_version: u32,
     request_id: &'a str,
     wallet_id: &'a str,
-    agent_passport_id: &'a str,
+    passport_id: &'a str,
     chain_id: &'a str,
     signing_type: &'a str,
     payload_hash: &'a str,
@@ -40,7 +40,7 @@ struct CanonicalValidateIntent<'a> {
     #[serde(rename = "version")]
     intent_version: u32,
     request_id: &'a str,
-    agent_passport_id: &'a str,
+    passport_id: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     wallet_id: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -59,7 +59,7 @@ struct CanonicalSessionCreateIntent<'a> {
     #[serde(rename = "version")]
     intent_version: u32,
     request_id: &'a str,
-    agent_passport_id: &'a str,
+    passport_id: &'a str,
     challenge_id: &'a str,
     challenge_nonce: &'a str,
 }
@@ -68,7 +68,7 @@ struct CanonicalSessionCreateIntent<'a> {
 pub struct CanonicalAgentMessageArgs<'a> {
     pub request_id: &'a str,
     pub wallet_id: &'a str,
-    pub agent_passport_id: &'a str,
+    pub passport_id: &'a str,
     pub chain_id: &'a str,
     pub signing_type: &'a str,
     pub payload_hash: &'a str,
@@ -88,7 +88,7 @@ pub struct VerifyAgentProofArgs<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct CanonicalValidateIntentArgs<'a> {
     pub request_id: &'a str,
-    pub agent_passport_id: &'a str,
+    pub passport_id: &'a str,
     pub wallet_id: Option<&'a str>,
     pub wallet_selector: Option<&'a str>,
     pub chain_id: &'a str,
@@ -108,7 +108,7 @@ pub struct VerifyValidateIntentProofArgs<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct CanonicalSessionCreateArgs<'a> {
     pub request_id: &'a str,
-    pub agent_passport_id: &'a str,
+    pub passport_id: &'a str,
     pub challenge_id: &'a str,
     pub challenge_nonce: &'a str,
 }
@@ -160,7 +160,7 @@ pub fn canonical_agent_message(
         intent_version: 1,
         request_id: args.request_id,
         wallet_id: args.wallet_id,
-        agent_passport_id: args.agent_passport_id,
+        passport_id: args.passport_id,
         chain_id: args.chain_id,
         signing_type: args.signing_type,
         payload_hash: args.payload_hash,
@@ -179,7 +179,7 @@ pub fn canonical_validate_intent_message(
         intent_type: "validate_sign_intent",
         intent_version: 1,
         request_id: args.request_id,
-        agent_passport_id: args.agent_passport_id,
+        passport_id: args.passport_id,
         wallet_id: args.wallet_id,
         wallet_selector: args.wallet_selector,
         chain_id: args.chain_id,
@@ -198,7 +198,7 @@ pub fn canonical_session_create_message(
         intent_type: "create_session",
         intent_version: 1,
         request_id: args.request_id,
-        agent_passport_id: args.agent_passport_id,
+        passport_id: args.passport_id,
         challenge_id: args.challenge_id,
         challenge_nonce: args.challenge_nonce,
     })
@@ -251,7 +251,7 @@ mod tests {
         let intent = CanonicalAgentMessageArgs {
             request_id: "req_123",
             wallet_id: "wal_123",
-            agent_passport_id: "agp_123",
+            passport_id: "agp_123",
             chain_id: "eip155:8453",
             signing_type: "transaction",
             payload_hash: &payload_hash,
@@ -279,7 +279,7 @@ mod tests {
         let message = canonical_agent_message(&CanonicalAgentMessageArgs {
             request_id: "req_123",
             wallet_id: "wal_123",
-            agent_passport_id: "agp_123",
+            passport_id: "agp_123",
             chain_id: "eip155:8453",
             signing_type: "transaction",
             payload_hash: &payload_hash,
@@ -297,7 +297,7 @@ mod tests {
             intent: CanonicalAgentMessageArgs {
                 request_id: "req_123",
                 wallet_id: "wal_123",
-                agent_passport_id: "agp_123",
+                passport_id: "agp_123",
                 chain_id: "eip155:8453",
                 signing_type: "transaction",
                 payload_hash: &payload_hash_hex("0xfeedface"),
@@ -318,7 +318,7 @@ mod tests {
         let payload_hash = payload_hash_hex("0xdeadbeef");
         let intent = CanonicalValidateIntentArgs {
             request_id: "req_validate_123",
-            agent_passport_id: "agp_123",
+            passport_id: "agp_123",
             wallet_id: Some("wal_123"),
             wallet_selector: None,
             chain_id: "eip155:8453",
@@ -344,7 +344,7 @@ mod tests {
         let public_key_hex = hex::encode(signing_key.verifying_key().as_bytes());
         let intent = CanonicalSessionCreateArgs {
             request_id: "req_session_123",
-            agent_passport_id: "agp_123",
+            passport_id: "agp_123",
             challenge_id: "sch_123",
             challenge_nonce: "nonce_123",
         };

@@ -1,15 +1,15 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Agent Passport metadata (control-plane view).
+/// Passport metadata (control-plane view).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentPassport {
-    pub agent_passport_id: String,
+pub struct Passport {
+    pub passport_id: String,
     pub principal_account_id: String,
     pub public_key: String,
     pub key_alg: String,
     pub key_address: String,
-    pub status: AgentPassportStatus,
+    pub status: PassportStatus,
     pub expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -17,26 +17,26 @@ pub struct AgentPassport {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum AgentPassportStatus {
+pub enum PassportStatus {
     Active,
     Frozen,
     Revoked,
     Expired,
 }
 
-/// Explicit agent-passport mutation request.
+/// Explicit passport mutation request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case")]
-pub enum MutateAgentPassportRequest {
+pub enum MutatePassportRequest {
     Freeze,
     Revoke,
 }
 
-/// Wallet Agent Passport Binding — authorizes one agent passport to one wallet.
+/// Wallet Passport Binding — authorizes one passport to one wallet.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WalletAgentPassportBinding {
+pub struct WalletPassportBinding {
     pub binding_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub wallet_id: String,
     pub passport_policy_id: String,
     pub passport_policy_version: u64,
@@ -53,9 +53,9 @@ pub enum BindingStatus {
     Revoked,
 }
 
-/// Request to create an agent passport with wallet bindings.
+/// Request to create a passport with wallet bindings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateAgentPassportRequest {
+pub struct CreatePassportRequest {
     pub public_key: String,
     pub key_address: String,
     pub expires_at: DateTime<Utc>,
@@ -73,7 +73,7 @@ pub struct BindingInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateAgentPassportBindingRequest {
+pub struct CreatePassportBindingRequest {
     pub wallet_id: String,
     pub passport_policy_id: String,
     pub passport_policy_version: u64,
@@ -81,10 +81,10 @@ pub struct CreateAgentPassportBindingRequest {
     pub selection_priority: u32,
 }
 
-/// Response from creating an agent passport.
+/// Response from creating a passport.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateAgentPassportResponse {
-    pub agent_passport_id: String,
+pub struct CreatePassportResponse {
+    pub passport_id: String,
     pub status: String,
     pub bindings: Vec<BindingResult>,
 }
@@ -103,15 +103,15 @@ mod tests {
     use super::*;
     use chrono::Utc;
 
-    fn sample_passport() -> AgentPassport {
+    fn sample_passport() -> Passport {
         let now = Utc::now();
-        AgentPassport {
-            agent_passport_id: "ap-001".into(),
+        Passport {
+            passport_id: "ap-001".into(),
             principal_account_id: "pa-001".into(),
             public_key: "0xabc123".into(),
             key_alg: "ecdsa-secp256k1".into(),
             key_address: "0xdef456".into(),
-            status: AgentPassportStatus::Active,
+            status: PassportStatus::Active,
             expires_at: now,
             created_at: now,
             updated_at: now,
@@ -119,31 +119,31 @@ mod tests {
     }
 
     #[test]
-    fn agent_passport_roundtrip() {
+    fn passport_roundtrip() {
         let original = sample_passport();
         let json = serde_json::to_string(&original).unwrap();
-        let decoded: AgentPassport = serde_json::from_str(&json).unwrap();
-        assert_eq!(decoded.agent_passport_id, original.agent_passport_id);
+        let decoded: Passport = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.passport_id, original.passport_id);
         assert_eq!(decoded.status, original.status);
         assert_eq!(decoded.key_alg, original.key_alg);
     }
 
     #[test]
-    fn agent_passport_status_serialization() {
+    fn passport_status_serialization() {
         assert_eq!(
-            serde_json::to_string(&AgentPassportStatus::Active).unwrap(),
+            serde_json::to_string(&PassportStatus::Active).unwrap(),
             "\"active\""
         );
         assert_eq!(
-            serde_json::to_string(&AgentPassportStatus::Frozen).unwrap(),
+            serde_json::to_string(&PassportStatus::Frozen).unwrap(),
             "\"frozen\""
         );
         assert_eq!(
-            serde_json::to_string(&AgentPassportStatus::Revoked).unwrap(),
+            serde_json::to_string(&PassportStatus::Revoked).unwrap(),
             "\"revoked\""
         );
         assert_eq!(
-            serde_json::to_string(&AgentPassportStatus::Expired).unwrap(),
+            serde_json::to_string(&PassportStatus::Expired).unwrap(),
             "\"expired\""
         );
     }
@@ -165,10 +165,10 @@ mod tests {
     }
 
     #[test]
-    fn wallet_agent_passport_binding_roundtrip() {
-        let binding = WalletAgentPassportBinding {
+    fn wallet_passport_binding_roundtrip() {
+        let binding = WalletPassportBinding {
             binding_id: "bind-001".into(),
-            agent_passport_id: "ap-001".into(),
+            passport_id: "ap-001".into(),
             wallet_id: "w-001".into(),
             passport_policy_id: "pp-001".into(),
             passport_policy_version: 3,
@@ -177,7 +177,7 @@ mod tests {
             selection_priority: 10,
         };
         let json = serde_json::to_string(&binding).unwrap();
-        let decoded: WalletAgentPassportBinding = serde_json::from_str(&json).unwrap();
+        let decoded: WalletPassportBinding = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.binding_id, "bind-001");
         assert_eq!(decoded.passport_policy_version, 3);
         assert!(decoded.is_default);
@@ -186,8 +186,8 @@ mod tests {
     }
 
     #[test]
-    fn create_agent_passport_request_roundtrip() {
-        let req = CreateAgentPassportRequest {
+    fn create_passport_request_roundtrip() {
+        let req = CreatePassportRequest {
             public_key: "0xpub".into(),
             key_address: "0xaddr".into(),
             expires_at: Utc::now(),
@@ -201,16 +201,16 @@ mod tests {
             idempotency_key: "idem-123".into(),
         };
         let json = serde_json::to_string(&req).unwrap();
-        let decoded: CreateAgentPassportRequest = serde_json::from_str(&json).unwrap();
+        let decoded: CreatePassportRequest = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.public_key, "0xpub");
         assert_eq!(decoded.bindings.len(), 1);
         assert_eq!(decoded.bindings[0].wallet_id, "w-001");
     }
 
     #[test]
-    fn create_agent_passport_response_roundtrip() {
-        let resp = CreateAgentPassportResponse {
-            agent_passport_id: "ap-002".into(),
+    fn create_passport_response_roundtrip() {
+        let resp = CreatePassportResponse {
+            passport_id: "ap-002".into(),
             status: "active".into(),
             bindings: vec![BindingResult {
                 binding_id: "bind-002".into(),
@@ -221,23 +221,23 @@ mod tests {
             }],
         };
         let json = serde_json::to_string(&resp).unwrap();
-        let decoded: CreateAgentPassportResponse = serde_json::from_str(&json).unwrap();
-        assert_eq!(decoded.agent_passport_id, "ap-002");
+        let decoded: CreatePassportResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.passport_id, "ap-002");
         assert_eq!(decoded.bindings[0].tee_mirror_status, "synced");
     }
 
     #[test]
-    fn mutate_agent_passport_request_tagged_enum() {
-        let freeze = MutateAgentPassportRequest::Freeze;
+    fn mutate_passport_request_tagged_enum() {
+        let freeze = MutatePassportRequest::Freeze;
         let json = serde_json::to_string(&freeze).unwrap();
         assert!(json.contains("\"operation\":\"freeze\""));
-        let decoded: MutateAgentPassportRequest = serde_json::from_str(&json).unwrap();
-        assert!(matches!(decoded, MutateAgentPassportRequest::Freeze));
+        let decoded: MutatePassportRequest = serde_json::from_str(&json).unwrap();
+        assert!(matches!(decoded, MutatePassportRequest::Freeze));
 
-        let revoke = MutateAgentPassportRequest::Revoke;
+        let revoke = MutatePassportRequest::Revoke;
         let json = serde_json::to_string(&revoke).unwrap();
         assert!(json.contains("\"operation\":\"revoke\""));
-        let decoded: MutateAgentPassportRequest = serde_json::from_str(&json).unwrap();
-        assert!(matches!(decoded, MutateAgentPassportRequest::Revoke));
+        let decoded: MutatePassportRequest = serde_json::from_str(&json).unwrap();
+        assert!(matches!(decoded, MutatePassportRequest::Revoke));
     }
 }

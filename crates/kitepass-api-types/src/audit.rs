@@ -13,7 +13,7 @@ pub struct AuditEvent {
     pub trace_id: String,
     pub request_id: String,
     pub wallet_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub chain_id: String,
     pub payload_hash: String,
     pub outcome: String,

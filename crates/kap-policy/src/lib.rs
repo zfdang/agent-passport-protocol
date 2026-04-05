@@ -15,8 +15,8 @@ pub enum PolicyError {
     },
     #[error("policy is not yet active (starts at {starts_at})")]
     NotYetActive { starts_at: DateTime<Utc> },
-    #[error("agent passport mismatch: expected {expected}, got {actual}")]
-    AgentPassportMismatch { expected: String, actual: String },
+    #[error("passport mismatch: expected {expected}, got {actual}")]
+    PassportMismatch { expected: String, actual: String },
     #[error("wallet mismatch: expected {expected}, got {actual}")]
     WalletMismatch { expected: String, actual: String },
     #[error("policy version mismatch")]
@@ -25,8 +25,8 @@ pub enum PolicyError {
     PermitExpired,
     #[error("permit wallet mismatch")]
     PermitWalletMismatch,
-    #[error("permit agent passport mismatch")]
-    PermitAgentPassportMismatch,
+    #[error("permit passport mismatch")]
+    PermitPassportMismatch,
     #[error("policy config record status is not active: {0}")]
     NotActive(String),
 }
@@ -57,15 +57,15 @@ pub fn validate_policy_config_active(
 }
 
 /// Validate that a PassportPolicyConfigRecord matches the given sign intent
-/// on the fields that Vault Signer mirrors (agent_passport_id, wallet_id).
+/// on the fields that Vault Signer mirrors (passport_id, wallet_id).
 pub fn validate_policy_against_intent(
     record: &PassportPolicyConfigRecord,
     intent: &SignIntent,
 ) -> Result<(), PolicyError> {
-    if record.agent_passport_id != intent.agent_passport_id {
-        return Err(PolicyError::AgentPassportMismatch {
-            expected: record.agent_passport_id.clone(),
-            actual: intent.agent_passport_id.clone(),
+    if record.passport_id != intent.passport_id {
+        return Err(PolicyError::PassportMismatch {
+            expected: record.passport_id.clone(),
+            actual: intent.passport_id.clone(),
         });
     }
     if record.wallet_id != intent.wallet_id {
@@ -79,7 +79,7 @@ pub fn validate_policy_against_intent(
 
 /// Lightweight check that the permit is still valid for the given intent.
 ///
-/// This validates expiry, wallet_id and agent_passport_id only.  Full field-level
+/// This validates expiry, wallet_id and passport_id only.  Full field-level
 /// validation (chain_id, payload_hash, destination, value, etc.) is performed
 /// by the vault-signer when it verifies the cryptographic permit signature.
 pub fn validate_permit_basics(
@@ -93,8 +93,8 @@ pub fn validate_permit_basics(
     if permit.wallet_id != intent.wallet_id {
         return Err(PolicyError::PermitWalletMismatch);
     }
-    if permit.agent_passport_id != intent.agent_passport_id {
-        return Err(PolicyError::PermitAgentPassportMismatch);
+    if permit.passport_id != intent.passport_id {
+        return Err(PolicyError::PermitPassportMismatch);
     }
     Ok(())
 }
@@ -111,7 +111,7 @@ mod tests {
             record_type: "policy_config_record".into(),
             record_version: 1,
             binding_id: "bind_1".into(),
-            agent_passport_id: "agp_1".into(),
+            passport_id: "agp_1".into(),
             wallet_id: "wal_1".into(),
             public_key: "abcd1234".into(),
             status: "active".into(),
@@ -133,7 +133,7 @@ mod tests {
             intent_version: 1,
             request_id: "req_1".into(),
             wallet_id: "wal_1".into(),
-            agent_passport_id: "agp_1".into(),
+            passport_id: "agp_1".into(),
             chain_id: "eip155:84532".into(),
             signing_type: "eth_signTransaction".into(),
             payload_hash: "0xdeadbeef".into(),
@@ -189,10 +189,10 @@ mod tests {
     }
 
     #[test]
-    fn wrong_agent_passport_rejected() {
+    fn wrong_passport_rejected() {
         let record = sample_record();
         let mut intent = sample_intent();
-        intent.agent_passport_id = "agp_wrong".into();
+        intent.passport_id = "agp_wrong".into();
         assert!(validate_policy_against_intent(&record, &intent).is_err());
     }
 
@@ -204,7 +204,7 @@ mod tests {
             permit_id: "permit_1".into(),
             request_id: "req_1".into(),
             wallet_id: "wal_1".into(),
-            agent_passport_id: "agp_1".into(),
+            passport_id: "agp_1".into(),
             chain_id: "eip155:84532".into(),
             signing_type: "eth_signTransaction".into(),
             payload_hash: "0xdeadbeef".into(),
@@ -245,11 +245,11 @@ mod tests {
     }
 
     #[test]
-    fn permit_agent_passport_mismatch_rejected() {
+    fn permit_passport_mismatch_rejected() {
         let mut permit = sample_permit();
-        permit.agent_passport_id = "agp_wrong".into();
+        permit.passport_id = "agp_wrong".into();
         let intent = sample_intent();
         let err = validate_permit_basics(&permit, &intent, &Utc::now()).unwrap_err();
-        assert!(matches!(err, PolicyError::PermitAgentPassportMismatch));
+        assert!(matches!(err, PolicyError::PermitPassportMismatch));
     }
 }

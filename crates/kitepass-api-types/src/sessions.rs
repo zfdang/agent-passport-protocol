@@ -5,20 +5,20 @@ use crate::chains::ChainFamily;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSessionChallengeRequest {
-    pub agent_passport_id: String,
+    pub passport_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSessionChallengeResponse {
     pub challenge_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub challenge_nonce: String,
     pub expires_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSessionRequest {
-    pub agent_passport_id: String,
+    pub passport_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -30,7 +30,7 @@ pub struct CreateSessionRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentSession {
     pub session_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub session_nonce: String,
     pub status: String,
     pub expires_at: DateTime<Utc>,
@@ -38,7 +38,7 @@ pub struct AgentSession {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentContextResponse {
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub key_status: String,
     pub expires_at: DateTime<Utc>,
     pub wallets: Vec<AgentAuthorizedWallet>,
@@ -66,7 +66,7 @@ pub struct AgentAuthorizedWallet {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentWalletUsageResponse {
     pub wallet_id: String,
-    pub agent_passport_id: String,
+    pub passport_id: String,
     pub passport_policy_id: String,
     pub passport_policy_version: u64,
     pub lifetime_spent: String,
@@ -86,7 +86,7 @@ mod tests {
         let now = Utc::now();
         let session = AgentSession {
             session_id: "sess-001".into(),
-            agent_passport_id: "ap-001".into(),
+            passport_id: "ap-001".into(),
             session_nonce: "nonce-abc".into(),
             status: "active".into(),
             expires_at: now,
@@ -94,7 +94,7 @@ mod tests {
         let json = serde_json::to_string(&session).unwrap();
         let decoded: AgentSession = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.session_id, "sess-001");
-        assert_eq!(decoded.agent_passport_id, "ap-001");
+        assert_eq!(decoded.passport_id, "ap-001");
         assert_eq!(decoded.session_nonce, "nonce-abc");
         assert_eq!(decoded.status, "active");
     }
@@ -102,11 +102,11 @@ mod tests {
     #[test]
     fn create_session_challenge_request_roundtrip() {
         let req = CreateSessionChallengeRequest {
-            agent_passport_id: "ap-002".into(),
+            passport_id: "ap-002".into(),
         };
         let json = serde_json::to_string(&req).unwrap();
         let decoded: CreateSessionChallengeRequest = serde_json::from_str(&json).unwrap();
-        assert_eq!(decoded.agent_passport_id, "ap-002");
+        assert_eq!(decoded.passport_id, "ap-002");
     }
 
     #[test]
@@ -114,7 +114,7 @@ mod tests {
         let now = Utc::now();
         let resp = CreateSessionChallengeResponse {
             challenge_id: "ch-001".into(),
-            agent_passport_id: "ap-001".into(),
+            passport_id: "ap-001".into(),
             challenge_nonce: "nonce-xyz".into(),
             expires_at: now,
         };
@@ -128,7 +128,7 @@ mod tests {
     fn agent_context_response_roundtrip() {
         let now = Utc::now();
         let resp = AgentContextResponse {
-            agent_passport_id: "ap-001".into(),
+            passport_id: "ap-001".into(),
             key_status: "active".into(),
             expires_at: now,
             wallets: vec![AgentAuthorizedWallet {
@@ -149,7 +149,7 @@ mod tests {
         };
         let json = serde_json::to_string(&resp).unwrap();
         let decoded: AgentContextResponse = serde_json::from_str(&json).unwrap();
-        assert_eq!(decoded.agent_passport_id, "ap-001");
+        assert_eq!(decoded.passport_id, "ap-001");
         assert_eq!(decoded.wallets.len(), 1);
         let w = &decoded.wallets[0];
         assert_eq!(w.wallet_id, "w-001");
