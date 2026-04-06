@@ -99,3 +99,17 @@ jobs:
 
       - name: Generate coverage summary
         run: bash scripts/run_coverage_gate.sh
+
+  cargo-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Run cargo audit
+        run: cargo audit
