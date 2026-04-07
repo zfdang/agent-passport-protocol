@@ -82,8 +82,9 @@ pub fn open_from_hex(
     info: &[u8],
     aad: &[u8],
 ) -> Result<Vec<u8>, HpkeError> {
-    let private_key_bytes =
-        hex::decode(recipient_private_key_hex).map_err(|_| HpkeError::InvalidKeyMaterial)?;
+    let private_key_bytes: Zeroizing<Vec<u8>> = Zeroizing::new(
+        hex::decode(recipient_private_key_hex).map_err(|_| HpkeError::InvalidKeyMaterial)?,
+    );
     let private_key = <ImportKem as KemTrait>::PrivateKey::from_bytes(&private_key_bytes)
         .map_err(|_| HpkeError::InvalidKeyMaterial)?;
 
