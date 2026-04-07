@@ -137,11 +137,15 @@ pub struct ChannelBinding {
 }
 
 /// Request to upload encrypted wallet secret.
+///
+/// The encrypted envelope is produced by P-384 ECDH + AES-256-GCM targeting
+/// the Capsule runtime's attestation-bound public key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UploadImportEnvelopeRequest {
     pub vault_signer_instance_id: String,
-    pub encapsulated_key: String,
-    pub ciphertext: String,
+    pub client_public_key_der_hex: String,
+    pub nonce_hex: String,
+    pub encrypted_data_hex: String,
     pub aad: ImportAad,
 }
 
@@ -590,16 +594,18 @@ mod tests {
     fn upload_import_envelope_request_roundtrip() {
         let req = UploadImportEnvelopeRequest {
             vault_signer_instance_id: "vs-001".into(),
-            encapsulated_key: "encap-key-b64".into(),
-            ciphertext: "cipher-b64".into(),
+            client_public_key_der_hex: "0xclientpub".into(),
+            nonce_hex: "0xnonce".into(),
+            encrypted_data_hex: "0xencrypted".into(),
             aad: sample_import_aad(),
         };
         let json = serde_json::to_string(&req).unwrap();
         let parsed: UploadImportEnvelopeRequest = serde_json::from_str(&json).unwrap();
 
         assert_eq!(parsed.vault_signer_instance_id, "vs-001");
-        assert_eq!(parsed.encapsulated_key, "encap-key-b64");
-        assert_eq!(parsed.ciphertext, "cipher-b64");
+        assert_eq!(parsed.client_public_key_der_hex, "0xclientpub");
+        assert_eq!(parsed.nonce_hex, "0xnonce");
+        assert_eq!(parsed.encrypted_data_hex, "0xencrypted");
         assert_eq!(parsed.aad.principal_account_id, "acct-abc");
         assert_eq!(parsed.aad.vault_signer_instance_id, "vs-001");
     }

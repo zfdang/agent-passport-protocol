@@ -31,7 +31,6 @@ serde_json = "1"
 # ── crypto ───────────────────────────────────────────────
 ed25519-dalek = { version = "2", features = ["rand_core", "pkcs8", "pem"] }
 aes-gcm       = "0.10"
-hpke          = { version = "0.13", features = ["x25519"] }
 sha2          = "0.10"
 rand          = "0.8"
 hex           = "0.4"
