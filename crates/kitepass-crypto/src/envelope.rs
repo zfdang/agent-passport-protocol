@@ -1,5 +1,5 @@
 use aes_gcm::aead::{Aead, KeyInit, Payload};
-use aes_gcm::{Aes256Gcm, Nonce as GcmNonce};
+use aes_gcm::Aes256Gcm;
 use rand::rngs::OsRng;
 use rand::RngCore;
 
@@ -33,7 +33,7 @@ impl Envelope {
 
         let ciphertext = cipher
             .encrypt(
-                GcmNonce::from_slice(&nonce),
+                (&nonce[..]).into(),
                 Payload {
                     msg: plaintext,
                     aad,
@@ -57,7 +57,7 @@ impl Envelope {
         let cipher = Aes256Gcm::new(wrapping_key.into());
         cipher
             .decrypt(
-                GcmNonce::from_slice(nonce),
+                nonce.into(),
                 Payload {
                     msg: ciphertext,
                     aad,

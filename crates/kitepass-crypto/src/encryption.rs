@@ -1,5 +1,5 @@
 use aes_gcm::aead::{Aead, KeyInit};
-use aes_gcm::{Aes256Gcm, Nonce as GcmNonce};
+use aes_gcm::Aes256Gcm;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use hkdf::Hkdf;
 use rand::rngs::OsRng;
@@ -115,10 +115,8 @@ impl CryptoEnvelope {
         OsRng.fill_bytes(&mut nonce_bytes);
 
         let cipher = Aes256Gcm::new(aes_key.as_ref().into());
-        let gcm_nonce = GcmNonce::from_slice(&nonce_bytes);
-
         let ciphertext = cipher
-            .encrypt(gcm_nonce, plaintext)
+            .encrypt((&nonce_bytes[..]).into(), plaintext)
             .map_err(|_| EncryptionError::EncryptionFailed)?;
 
         Ok(Self {
@@ -153,10 +151,8 @@ impl CryptoEnvelope {
             .map_err(|_| EncryptionError::KeyDerivationFailed("decryption"))?;
 
         let cipher = Aes256Gcm::new(aes_key.as_ref().into());
-        let gcm_nonce = GcmNonce::from_slice(&nonce_bytes);
-
         let plaintext = cipher
-            .decrypt(gcm_nonce, ciphertext.as_ref())
+            .decrypt(nonce_bytes.as_slice().into(), ciphertext.as_ref())
             .map_err(|_| EncryptionError::DecryptionFailed)?;
 
         Ok(Zeroizing::new(plaintext))

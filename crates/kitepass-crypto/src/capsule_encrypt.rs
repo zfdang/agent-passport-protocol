@@ -17,7 +17,7 @@
 //! ```
 
 use aes_gcm::aead::{Aead, KeyInit};
-use aes_gcm::{Aes256Gcm, Nonce};
+use aes_gcm::Aes256Gcm;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use hkdf::Hkdf;
@@ -103,7 +103,7 @@ pub fn encrypt_to_capsule(
     let aes_key = derive_aes_key(
         client_public_sec1.as_bytes(),
         enclave_public_sec1.as_bytes(),
-        shared_secret.raw_secret_bytes().as_slice(),
+        shared_secret.raw_secret_bytes().as_ref(),
         &nonce_bytes,
     )?;
 
@@ -118,7 +118,7 @@ pub fn encrypt_to_capsule(
     let cipher =
         Aes256Gcm::new_from_slice(&aes_key).map_err(|_| CapsuleEncryptError::EncryptionFailed)?;
     let encrypted_data = cipher
-        .encrypt(Nonce::from_slice(&nonce_bytes), envelope_json.as_bytes())
+        .encrypt((&nonce_bytes[..]).into(), envelope_json.as_bytes())
         .map_err(|_| CapsuleEncryptError::EncryptionFailed)?;
 
     Ok(CapsuleSealedEnvelope {
