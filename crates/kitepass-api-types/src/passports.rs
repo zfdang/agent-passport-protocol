@@ -22,6 +22,9 @@ pub enum PassportStatus {
     Frozen,
     Revoked,
     Expired,
+    /// Forward-compatibility: unknown statuses from newer servers.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Explicit passport mutation request.
@@ -51,6 +54,9 @@ pub enum BindingStatus {
     Active,
     Suspended,
     Revoked,
+    /// Forward-compatibility: unknown statuses from newer servers.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Request to create a passport with wallet bindings.

@@ -25,4 +25,7 @@ pub enum OperationStatus {
     Running,
     Completed,
     Failed,
+    /// Forward-compatibility: unknown statuses from newer servers.
+    #[serde(other)]
+    Unknown,
 }

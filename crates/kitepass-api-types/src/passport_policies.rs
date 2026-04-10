@@ -103,6 +103,9 @@ pub enum PassportPolicyState {
     Active,
     Deactivated,
     Archived,
+    /// Forward-compatibility: unknown states from newer servers.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Signed policy config record for TEE mirror provisioning.
@@ -189,6 +192,9 @@ pub enum PassportPolicyReservationStatus {
     SigningStarted,
     Consumed,
     RolledBack,
+    /// Forward-compatibility: unknown statuses from newer servers.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Payload for signing a PassportPolicy Permit.

@@ -23,6 +23,9 @@ pub enum WalletStatus {
     Frozen,
     Revoked,
     Archived,
+    /// Forward-compatibility: unknown statuses from newer servers.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Explicit wallet mutation request.
@@ -296,9 +299,9 @@ mod tests {
     }
 
     #[test]
-    fn wallet_status_rejects_unknown_variant() {
-        let result = serde_json::from_str::<WalletStatus>("\"deleted\"");
-        assert!(result.is_err());
+    fn wallet_status_deserializes_unknown_variant() {
+        let result: WalletStatus = serde_json::from_str("\"deleted\"").unwrap();
+        assert_eq!(result, WalletStatus::Unknown);
     }
 
     // ── MutateWalletRequest enum (internally tagged) ────────────────
@@ -662,6 +665,8 @@ mod tests {
 
     #[test]
     fn wallet_rejects_invalid_chain_family() {
+        // ChainFamily does NOT have #[serde(other)] since it's a functional
+        // type with methods, so unknown chain families still fail.
         let json = serde_json::to_string(&sample_wallet()).unwrap();
         let bad_json = json.replace("\"evm\"", "\"bitcoin\"");
         let result = serde_json::from_str::<Wallet>(&bad_json);

@@ -39,4 +39,19 @@ pub enum ErrorCode {
     SigningFailed,
     SubmissionFailed,
     TemporaryUnavailable,
+    /// Forward-compatibility: unknown error codes from newer servers
+    /// deserialize to this variant instead of failing.
+    #[serde(other)]
+    Unknown,
+}
+
+impl ErrorCode {
+    /// Returns `true` for error codes that represent transient failures
+    /// where a retry may succeed.
+    pub fn is_retryable(&self) -> bool {
+        matches!(
+            self,
+            ErrorCode::TemporaryUnavailable | ErrorCode::TeeUnavailable | ErrorCode::RateLimited
+        )
+    }
 }
