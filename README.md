@@ -17,8 +17,10 @@ Public shared contract crates for the Agent Passport ecosystem.
 | Crate | Description |
 |-------|-------------|
 | `kap-config` | Configuration loading and environment management |
-| `kap-observability` | Logging, tracing, and metrics setup |
+| `kap-observability` | Logging, tracing, request IDs, and backend `analytics_event` middleware |
 | `kap-policy` | Policy types and evaluation logic |
+
+`kap-observability` now provides the shared HTTP analytics layer used by Gateway, Policy Authorizer, Audit Ledger, Tx Relayer, and Vault Signer. It emits one `started` event and one terminal `success` or `failed` event per registered endpoint, using `flow`, `step`, `outcome`, `request_id`, `latency_ms`, and sanitized `error_code` fields for Loki/Grafana dashboards.
 
 ## Consumers
 

@@ -1,3 +1,4 @@
+pub mod analytics;
 pub mod init;
 pub mod request_id;
 

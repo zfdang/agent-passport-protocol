@@ -9,6 +9,7 @@ pub fn init_tracing(service_name: &str) {
 
     let result = fmt()
         .json()
+        .flatten_event(true)
         .with_env_filter(filter)
         .with_target(true)
         .with_thread_ids(true)
