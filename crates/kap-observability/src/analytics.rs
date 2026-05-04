@@ -110,7 +110,7 @@ impl AnalyticsEndpointRegistry {
         if let Some(endpoint) = self.resolve_path(method, path) {
             return endpoint.clone();
         }
-        unknown_endpoint(method, matched_route.unwrap_or(path))
+        unknown_endpoint(method)
     }
 
     pub fn resolve_route(&self, method: &Method, route: &str) -> Option<&AnalyticsEndpointSpec> {
@@ -185,7 +185,7 @@ pub struct AnalyticsEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status_class: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub latency_ms: Option<u128>,
+    pub latency_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_code: Option<String>,
 }
@@ -242,7 +242,7 @@ pub async fn analytics_middleware(
         &request_id,
         &client_surface,
         status,
-        started_at.elapsed().as_millis(),
+        u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX),
         error_code,
     ));
 
@@ -290,7 +290,7 @@ pub fn build_terminal_event(
     request_id: &str,
     client_surface: &str,
     status: StatusCode,
-    latency_ms: u128,
+    latency_ms: u64,
     error_code: Option<String>,
 ) -> AnalyticsEvent {
     let outcome = if status.as_u16() < 400 {
@@ -315,6 +315,13 @@ pub fn event_json_line(event: &AnalyticsEvent) -> String {
 }
 
 pub fn emit_event(event: &AnalyticsEvent) {
+    // Analytics events are written directly to stdout as flat JSON lines so
+    // every envelope field (`record_type`, `service`, `event_name`, ...) lands
+    // at the top level. This is the "equivalent custom layer" referenced by
+    // §6.1 of `passport-backend-analytics-log-design.md`; the tracing fmt JSON
+    // formatter would otherwise wrap fields under `fields`. Promtail's `json`
+    // pipeline stage parses each line independently, so operational tracing
+    // logs and analytics events coexist on the same stream.
     println!("{}", event_json_line(event));
 }
 
@@ -362,7 +369,7 @@ fn build_event(
     client_surface: &str,
     outcome: AnalyticsOutcome,
     status: Option<StatusCode>,
-    latency_ms: Option<u128>,
+    latency_ms: Option<u64>,
     error_code: Option<String>,
 ) -> AnalyticsEvent {
     AnalyticsEvent {
@@ -388,11 +395,14 @@ fn build_event(
     }
 }
 
-fn unknown_endpoint(method: &Method, route: &str) -> AnalyticsEndpointSpec {
-    let route = Box::leak(route.to_string().into_boxed_str());
+fn unknown_endpoint(method: &Method) -> AnalyticsEndpointSpec {
+    // Never embed the caller-supplied path here: a per-request allocation that
+    // outlives the request would leak under attacker-driven random-path traffic
+    // (404 sweeps, OPTIONS preflights from arbitrary origins, scanner probes).
+    // The unknown bucket is intentionally low-cardinality.
     AnalyticsEndpointSpec::new(
         method.clone(),
-        route,
+        "<unknown>",
         "unknown_endpoint",
         "unknown",
         "unknown",
@@ -537,6 +547,146 @@ mod tests {
         assert_eq!(value["status_class"], "4xx");
         assert_eq!(value["latency_ms"], 42);
         assert_eq!(value["error_code"], "POLICY_DENIED");
+    }
+
+    #[test]
+    fn unknown_endpoint_returns_static_low_cardinality_bucket() {
+        // Two distinct unmatched paths must collapse to the same static spec —
+        // i.e. unknown_endpoint must never carry the caller-supplied path.
+        let registry = AnalyticsEndpointRegistry::new(vec![test_spec()]);
+        let a = registry.resolve(&Method::GET, None, "/totally/unknown/a");
+        let b = registry.resolve(
+            &Method::GET,
+            None,
+            "/totally/unknown/b/with/much/longer/suffix",
+        );
+        assert_eq!(a.route, "<unknown>");
+        assert_eq!(b.route, "<unknown>");
+        assert_eq!(a.operation_name, "unknown_endpoint");
+        assert_eq!(a.flow, "unknown");
+        // The route field is a `&'static str`, so the same pointer is reused
+        // regardless of the original path — proving no per-request allocation.
+        assert!(std::ptr::eq(a.route.as_ptr(), b.route.as_ptr()));
+    }
+
+    #[test]
+    fn unknown_endpoint_keeps_method() {
+        let registry = AnalyticsEndpointRegistry::new(vec![]);
+        let post = registry.resolve(&Method::POST, None, "/x");
+        let get = registry.resolve(&Method::GET, None, "/x");
+        assert_eq!(post.method, Method::POST);
+        assert_eq!(get.method, Method::GET);
+    }
+
+    #[tokio::test]
+    async fn middleware_emits_failed_terminal_with_extension_error_code() {
+        use axum::response::IntoResponse;
+        let state = AnalyticsState::new(
+            "test-service",
+            "test",
+            vec![AnalyticsEndpointSpec::new(
+                Method::GET,
+                "/boom",
+                "boom",
+                "test",
+                "boom",
+                "internal",
+                "internal",
+            )],
+        );
+        async fn handler() -> Response {
+            let mut res = (StatusCode::FORBIDDEN, "no").into_response();
+            res.extensions_mut()
+                .insert(AnalyticsErrorCode::new("POLICY_DENIED"));
+            res
+        }
+        let app =
+            Router::new()
+                .route("/boom", get(handler))
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    analytics_middleware,
+                ));
+        let response = app
+            .oneshot(Request::builder().uri("/boom").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        // Request-id should still flow back, regardless of failed outcome.
+        assert!(response.headers().get(REQUEST_ID_HEADER).is_some());
+    }
+
+    #[tokio::test]
+    async fn middleware_falls_back_to_status_mapping_when_extension_absent() {
+        let state = AnalyticsState::new(
+            "test-service",
+            "test",
+            vec![AnalyticsEndpointSpec::new(
+                Method::GET,
+                "/nope",
+                "nope",
+                "test",
+                "nope",
+                "internal",
+                "internal",
+            )],
+        );
+        async fn handler() -> StatusCode {
+            StatusCode::UNAUTHORIZED
+        }
+        let app =
+            Router::new()
+                .route("/nope", get(handler))
+                .layer(axum::middleware::from_fn_with_state(
+                    state,
+                    analytics_middleware,
+                ));
+        let response = app
+            .oneshot(Request::builder().uri("/nope").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn middleware_rejects_invalid_request_id_header() {
+        let state = AnalyticsState::new(
+            "test-service",
+            "test",
+            vec![AnalyticsEndpointSpec::new(
+                Method::GET,
+                "/ok",
+                "ok",
+                "test",
+                "ok",
+                "public",
+                "unknown",
+            )],
+        );
+        let app = Router::new().route("/ok", get(|| async { "ok" })).layer(
+            axum::middleware::from_fn_with_state(state, analytics_middleware),
+        );
+        // The forged value is a syntactically-valid HTTP header that fails
+        // `valid_request_id` (contains `.`, which is outside the allowlist) —
+        // exactly the log-injection vector we are guarding against.
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/ok")
+                    .header(REQUEST_ID_HEADER, "bad.request.id")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        // Forged request-id is dropped; the middleware generates a fresh `req_…`.
+        let echoed = response
+            .headers()
+            .get(REQUEST_ID_HEADER)
+            .and_then(|v| v.to_str().ok())
+            .expect("middleware always emits a request id");
+        assert_ne!(echoed, "bad.request.id");
+        assert!(echoed.starts_with("req_"));
     }
 
     #[tokio::test]
